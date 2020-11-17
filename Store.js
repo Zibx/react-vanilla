@@ -99,17 +99,17 @@ var StoreParent = function(parent, key, item) {
 };
 StoreParent.prototype = {
   getKey: function() {
-    if(this.item){
+    if(this.key !== null && this.key !== void 0){
+      return this.key;
+    }else{
       var idx = this.parent._props.indexOf(this.item);
       if(idx > -1)
         return idx;
       console.error('try to write to not existed item');
-    }else{
-      return this.key;
     }
   },
   getPointer: function() {
-    return this.parent._props[this.getKey()];
+    return this.parent.get(this.getKey());
   }
 };
 Store.prototype = {
@@ -182,15 +182,35 @@ Store.prototype = {
   key: String, val: any
   key: {k: v, ...}
    */
-  set: function(key, val, changeList) {
+  set: function(key, val, changeList, bubbleState) {
     var isChangeList = changeList !== void 0;
-    changeList = changeList || [];
+    if(!changeList){
+      bubbleState = true;
+      changeList = [];
+    }
 
     var type = typeof key;
 
+    if(bubbleState && this.parent){
+      var parentKey = this.parent.getKey();
+      if(type === 'object'){
+        Store.prototype.set.call( this.parent.parent,
+          parentKey,
+          key
+        );
+      }else{
+        Store.prototype.set.call( this.parent.parent,
+          parentKey + '.' + key,
+          val
+        );
+      }
+      return this;
+    }else{
+      bubbleState = false
+    }
     if(type === 'object'){
       for(let k in key){
-        this.set(k, key[k], changeList);
+        this.set(k, key[k], changeList, bubbleState);
       }
       this._notify(changeList);
       return this;
@@ -203,17 +223,20 @@ Store.prototype = {
       _key = key.split('.');
     }else if(type === 'number'){
       _key = [key];
-
     }
 
     this._set(
       _key,
       val,
-      this.parent ? this.parent.getPointer() : this._props,
+      this._props,
       changeList
     );
+
     if(!isChangeList)
       this._notify(changeList);
+
+
+
 
     return this;
   },
@@ -234,7 +257,7 @@ Store.prototype = {
       key = list.join('.');
       changeList.push([key, this.get(key)]);
     }
-    this._notify(changeList, '', additional)
+
     if(this.parent){
       changeListBubbled.push(this.parent.getKey());
       if(prefix) {
@@ -242,19 +265,33 @@ Store.prototype = {
       }else{
         this.parent.parent._notifyBubble(changeListBubbled, this.parent.getKey(), additional);
       }
+    }else{
+      this._notify(changeList, '', additional)
     }
 
     //debugger
 
   },
+  _notifyDeep: function(evt, fullKey, val, additional) {
+    this.events.fire(evt, fullKey, val, additional);
+    this.fire(fullKey, val, additional);
+    var tokens = fullKey.split('.');
+    if(tokens.length>1){
+      if(tokens[0] in this.arrays){
+        this.arrays[tokens[0]]._notifyDeep(evt,tokens.slice(1).join('.'), val, additional);
+      }else if(this.items.has(this._props[tokens[0]])){
+        this.items.get(this._props[tokens[0]])._notifyDeep(evt,tokens.slice(1).join('.'), val, additional);
+      }
+    }
+  },
   _notify: function(changeList, prefix, additional) {
-    prefix = prefix || '';
+    prefix = prefix === void 0 ? '' : prefix;
     for( let i = changeList.length; i; ){
       const changeListElement = changeList[ --i ];
       var key = changeListElement[0], val = changeListElement[1],
         fullKey = prefix+(key===''?'':(prefix===''?'':'.')+key);
-      this.events.fire('change', fullKey, changeListElement[1], additional);
-      this.fire(fullKey, changeListElement[1], additional);
+      this._notifyDeep('change', fullKey, changeListElement[1], additional)
+
 
     }
     if(this.parent){
@@ -282,7 +319,7 @@ Store.prototype = {
       key = [key];
     }
 
-    let ref = this.parent ? this.parent.parent.get(this.parent.getKey()) : this,
+    let ref = this.parent ? this.parent.getPointer() : this,
       lastStore = ref, i, _i;
 
     for( i = 0, _i = key.length; i < _i; i++ ){
@@ -371,7 +408,7 @@ Store.prototype = {
     return this;
   },
   bind: function (key) {
-    return new StoreBinding(this, key);
+    return new StoreBinding( this, key );
   },
   val: function(key) {
     const me = this;
@@ -654,7 +691,7 @@ ArrayStore.prototype = {
       }
       return i < _i ? i : -1;
     }else{
-      return this._props.indexOf(a);
+      return this._props.indexOf( a );
     }
   },
   toArray: function () {
@@ -728,9 +765,9 @@ ArrayStore.prototype = {
         this.splice.apply( this, [ 0, this.length ].concat( key ) )
         return this;
       }else if( key === this.length ){
-      this.push( item );
-      return void 0; // for same behavior we return empty array
-    }
+        this.push( item );
+        return void 0; // for same behavior we return empty array
+      }
       return this.splice( key, 1, item )[ 0 ];
     }else{
       return this.item(_key[0]).set(_key.slice(1), item);
@@ -779,7 +816,7 @@ ArrayStore.prototype = {
   }
 };
 ArrayStore.prototype = Object.assign(new Store(), ArrayStore.prototype);
-
 Store.ArrayStore = ArrayStore;
+
 typeof module === 'object' && (module.exports = Store);
 (typeof window === 'object') && (window.Store = Store);

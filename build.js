@@ -30,7 +30,7 @@ Object
 
   for( let outFileName in build ){
     let
-      dest = path.join( dir, outFileName ),
+      dest = path.join( dir, outFileName )+'.js',
       source = header +
         (await minify(
           build[ outFileName ].map( fileName => hash[ fileName ] ).join( ';' )

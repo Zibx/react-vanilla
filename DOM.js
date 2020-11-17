@@ -80,8 +80,7 @@ NS.apply = function(a,b) {
           prop = cfg.prop,
           on = cfg.on || {},
           renderTo = cfg.renderTo,
-          el = cfg.el || (type in customElementCreate ? customElementCreate[type](type, cfg) : document.createElement( type )),
-          classList = el.classList;
+          el = cfg.el || (type in customElementCreate ? customElementCreate[type](type, cfg) : document.createElement( type ));
 
         var i, _i, name;
 
@@ -189,7 +188,7 @@ NS.apply = function(a,b) {
     };
     'div,template,span,input,label,canvas,span,textarea,table,tr,td,th,tBody,tHead'.split( ',' ).forEach( function( name ){
         D[ name ] = function(){
-            return domEl.apply( null, [ name ].concat(ArraySlice.call(arguments)))
+            return domEl.apply( null, [ name ].concat(ArraySlice.call(arguments)));
         };
     } );
 
@@ -311,12 +310,14 @@ NS.apply = function(a,b) {
             if( type === 'function' ){
                 var tmp = D.Text('');//( {cls: 'zero-wrapper'} );
                 el.appendChild( tmp );
-                var list = [];
-                el.setAttribute('data-hooked', 'yep');
+                var list = [],
+                  isNotFragment = !(el instanceof DocumentFragment); // TODO: add attribute on real add to dom
+
+                isNotFragment && el.setAttribute('data-hooked', 'yep');
 
                 // maybe do it through outer weak map?
-                el.__un = el.__un || [];
-                var hookFn;
+                isNotFragment && (el.__un = el.__un || []);
+                var hookFn, release;
 
                 if(isHook){
                     hookFn = function(val){
@@ -344,8 +345,8 @@ NS.apply = function(a,b) {
                             el.insertBefore( fragment, tmp );
                         }
                     };
-
-                    el.__un.push(subEl.hook( hookFn ));
+                    release = subEl.hook( hookFn );
+                    isNotFragment && el.__un.push(release);
                 }else{
 
                     hookFn = function(){
@@ -368,8 +369,8 @@ NS.apply = function(a,b) {
                             return;
                         el.insertBefore(fragment, tmp);
                     };
-
-                    el.__un.push(subEl( hookFn ));
+                    release = subEl( hookFn );
+                    isNotFragment && el.__un.push(release);
                 }
             }else if( subEl !== void 0 && subEl !== false && subEl !== null ){
                 el.appendChild( D.Text( subEl ) );
@@ -530,7 +531,20 @@ NS.apply = function(a,b) {
                 u.dom = _construct(ctor, u.cfg, u.p);
                 d.dom && (d = d.dom);
                 if(d.parentNode){
-                    d.parentNode.replaceChild( 'dom' in u.dom ? u.dom.dom : u.dom, d )
+                    var dParent = d.parentNode,
+                      isInDOM = D.isInDOM(dParent),
+                      newChild = u.dom;
+
+                    if('dom' in u.dom){
+                        newChild = newChild.dom;
+                        newChild.__cmp = u.dom;
+                    }
+
+                    isInDOM && D._recursiveCmpCall(dParent, d, 'beforeRemoveFromDOM');
+                    isInDOM && D._recursiveCmpCall(dParent, newChild, 'beforeAddToDOM');
+                    d.parentNode.replaceChild( newChild, d )
+                    isInDOM && D._recursiveCmpCall(dParent, d, 'afterRemoveFromDOM');
+                    isInDOM && D._recursiveCmpCall(dParent, newChild, 'afterAddToDOM');
                 }
             }
         }else{

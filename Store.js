@@ -25,11 +25,15 @@ Store MUST notify all subscribers on each change
 Store MUST NOT notify subscribers if it does not change
 
  */
-const Store = function(cfg) {
-  Observable.call(this);
-  this.events = new Observable();
-  this._props = cfg || {};
-},
+const Store = function(cfg, key) {
+    Observable.call(this);
+    this.events = new Observable();
+    this._props = cfg || {};
+    this._key = key;
+    // SINGLETONS
+    this.arrays = {};
+    this.items = new WeakMap();
+  },
   isObject = function(obj) {
     // null is not an object. treat Date as primitive
     return typeof obj === 'object' && obj !== null && !(obj instanceof Date);
@@ -103,9 +107,13 @@ StoreParent.prototype = {
     }else{
       return this.key;
     }
+  },
+  getPointer: function() {
+    return this.parent._props[this.getKey()];
   }
 };
 Store.prototype = {
+  _key: null,
   parent: null,
   setParent: function(parent, key, item){
     this.parent = new StoreParent(parent, key, item);
@@ -117,15 +125,30 @@ Store.prototype = {
     }
     return out;
   },
-  item: function(key, item){
-    let subStore = new Store(item?item:key);
+  item: function(key, refItem) {
+    var item = refItem ? refItem : this.get(key);
+    var subStore = typeof item === 'object' ? this.items.get(item) : void 0;
+    if(subStore === void 0){
+      this.items.set(item, subStore = new Store(null, key));
+      subStore.setParent(this, key, item);
+    }
+    return subStore;
+  },
+
+  // TODO: TEST item in real project and remove this
+  item2: function(key, item){
+
+    let subStore = item ? new Store(item) : new Store(null, key);
     subStore.setParent(this, key, item);
     return subStore;
   },
   array: function(key){
+    // singletons
+    if(key in this.arrays)
+      return this.arrays[key];
     let arrayStore = new ArrayStore(this.get(key));
     arrayStore.setParent(this, key);
-    return arrayStore;
+    return this.arrays[key] = arrayStore;
   },
   experimental: false,
   _set: function(keys, val, pointer, changeList) {
@@ -173,7 +196,9 @@ Store.prototype = {
       return this;
     }
 
-    var _key;
+
+
+    var _key = key;
     if(type === 'string') {
       _key = key.split('.');
     }else if(type === 'number'){
@@ -182,10 +207,10 @@ Store.prototype = {
     }
 
     this._set(
-        _key,
-        val,
-        this._props,
-        changeList
+      _key,
+      val,
+      this.parent ? this.parent.getPointer() : this._props,
+      changeList
     );
     if(!isChangeList)
       this._notify(changeList);
@@ -198,28 +223,56 @@ Store.prototype = {
       return this;
     return this.set(key, val, changeList);
   },
-  _notify: function(changeList, prefix) {
+  _notifyBubble: function(changeListBubbled, prefix, additional){
+    prefix = prefix || '';
+
+
+    var item, changeList = [], list = [], i, key;
+    for( i = changeListBubbled.length; i;){
+      item = changeListBubbled[--i];
+      list.push(item);
+      key = list.join('.');
+      changeList.push([key, this.get(key)]);
+    }
+    this._notify(changeList, '', additional)
+    if(this.parent){
+      changeListBubbled.push(this.parent.getKey());
+      if(prefix) {
+        this.parent.parent._notifyBubble(changeListBubbled, this.parent.getKey() + '.' + prefix, additional);
+      }else{
+        this.parent.parent._notifyBubble(changeListBubbled, this.parent.getKey(), additional);
+      }
+    }
+
+    //debugger
+
+  },
+  _notify: function(changeList, prefix, additional) {
     prefix = prefix || '';
     for( let i = changeList.length; i; ){
       const changeListElement = changeList[ --i ];
       var key = changeListElement[0], val = changeListElement[1],
-          fullKey = prefix+(key===''?'':(prefix===''?'':'.')+key);
-        this.events.fire('change', fullKey, changeListElement[1]);
-        this.fire(fullKey, changeListElement[1]);
+        fullKey = prefix+(key===''?'':(prefix===''?'':'.')+key);
+      this.events.fire('change', fullKey, changeListElement[1], additional);
+      this.fire(fullKey, changeListElement[1], additional);
 
     }
     if(this.parent){
       if(prefix) {
-        this.parent.parent._notify(changeList, this.parent.getKey() + '.' + prefix);
+        this.parent.parent._notify(changeList, this.parent.getKey() + '.' + prefix, additional);
       }else{
-        this.parent.parent._notify(changeList, this.parent.getKey());
-
+        this.parent.parent._notify(changeList, this.parent.getKey(), additional);
       }
     }
   },
   get: function(key, returnLastStore) {
-    if(key === void 0)
+
+    if(key === void 0){
+      if(this.parent)
+        return this.parent.parent.get(this.parent.getKey())
+
       return this._props;
+    }
 
     let type = typeof key;
     if(type === 'string') {
@@ -229,8 +282,8 @@ Store.prototype = {
       key = [key];
     }
 
-    let ref = this,
-        lastStore = ref, i, _i;
+    let ref = this.parent ? this.parent.parent.get(this.parent.getKey()) : this,
+      lastStore = ref, i, _i;
 
     for( i = 0, _i = key.length; i < _i; i++ ){
       if( ref instanceof Store ){
@@ -250,7 +303,7 @@ Store.prototype = {
     return ref;
   },
 
-  sub: function(key, fn, suppresFirstCall) {
+  sub: function(key, fn, suppressFirstCall) {
     var un;
     if(Array.isArray(key)){
       var _self = this;
@@ -261,20 +314,23 @@ Store.prototype = {
         return fn.apply(_self, args);
       };
       var wrap = function(i){
-        return function(val) {
-          args[i] = val;
-          return caller();
+        return function(val, force) {
+          if(args[i] !== val || force){
+            args[ i ] = val;
+            return caller();
+          }
         };
       };
 
       var uns = [];
+
       for( var i = 0, _i = key.length; i < _i; i++ ){
         if(key[i] instanceof StoreBinding){
-          // TODO add suppresFirstCall
+          // TODO add suppressFirstCall
           uns.push(key[i].sub(wrap(i)));
           args[i] = key[i].get();
         }else if(key[i] instanceof HookPrototype){
-          uns.push(key[i].hook(wrap(i), suppresFirstCall));
+          uns.push(key[i].hook(wrap(i), suppressFirstCall));
           args[i] = key[i].get();
         }else{
           uns.push(this.on( key[ i ], wrap(i) ));
@@ -283,7 +339,7 @@ Store.prototype = {
 
 
       }
-      !suppresFirstCall && caller();
+      !suppressFirstCall && caller();
       return function() {
         for( var i = 0, _i = uns.length; i < _i; i++ ){
           uns[ i ]();
@@ -291,7 +347,7 @@ Store.prototype = {
       };
     }else{
       un = this.on( key, fn );
-      !suppresFirstCall && fn( this.get( key ) );
+      !suppressFirstCall && fn( this.get( key ) );
       return un;
     }
 
@@ -379,9 +435,9 @@ StoreBinding.prototype = {
     return new StoreBinding(this.store, this.key+'.'+key);
   },
   hook: function(draw) {
-      return this.sub(function(val){
-        draw(val);
-      });
+    return this.sub(function(val){
+      draw(val);
+    });
   },
   array: function() {
     return this.store.array(this.key);
@@ -456,14 +512,14 @@ Store.IF = function(cfg, children){
       var hook = function( cond ){
         update( cond ? holders.true : holders.false );
       };
-      if(cfg.condition instanceof HookPrototype){
-        cfg.condition.hook( hook );
-      }else if(typeof cfg.condition === 'function'){
-        cfg.condition( hook );
-      }else{
-        // TODO other hooklikes
-        hook(cfg.condition)
-      }
+    if(cfg.condition instanceof HookPrototype){
+      cfg.condition.hook( hook );
+    }else if(typeof cfg.condition === 'function'){
+      cfg.condition( hook );
+    }else{
+      // TODO other hooklikes
+      hook(cfg.condition)
+    }
   }
 };
 Store.NOT = Store.AGGREGATE(function(values, length) {
@@ -508,9 +564,9 @@ HookPrototype.prototype = {
     x.sub = (fn)=> this.hook(fn);
     return x;
   },
-  hook: function(fn, suppresFirstCall) {
+  hook: function(fn, suppressFirstCall) {
     this.subscribers.push(fn);
-    !suppresFirstCall && fn(this.get());
+    !suppressFirstCall && fn(this.get());
     var _self = this;
     return function() {
       var index = _self.subscribers.indexOf(fn);
@@ -562,6 +618,7 @@ Store.Value = {
     setter: function(val) { return val|0; }
   }),
   Any: new HookFactory(),
+  Array: new HookFactory(),
   Function: new HookFactory()
 };
 Store.HookPrototype = HookPrototype;
@@ -590,7 +647,15 @@ const ArrayStore = function(cfg) {
 ArrayStore.prototype = {
   length: 0,
   indexOf: function (a) {
-    return this._props.indexOf(a);
+    if(typeof a === 'function'){
+      for( var i = 0, _i = this._props.length; i < _i; i++ ){
+        if(a(this._props[ i ]))
+          break;
+      }
+      return i < _i ? i : -1;
+    }else{
+      return this._props.indexOf(a);
+    }
   },
   toArray: function () {
     return this._props;
@@ -598,10 +663,12 @@ ArrayStore.prototype = {
   _fireAdd: function (item, pos) {
     var arr = this._props;
     this.fire('add', item, pos > 0 ? arr.get(pos-1) : null, pos < this.length - 1 ? arr.get(pos+1) : null, pos)
+    this._notifyBubble([pos], '', true);
   },
   _fireRemove: function (item, pos) {
     var arr = this._props;
     this.fire('remove', item, pos > 0 ? arr.get(pos-1) : null, pos < this.length ? arr.get(pos) : null, pos)
+    this._notifyBubble([], '', true);
   },
   push: function (item) {
     // single item push only
@@ -649,15 +716,35 @@ ArrayStore.prototype = {
 
   @return element that was in that position before
    */
-  set: function(pos, item){
-    if(pos === this.length){
+  set: function(key, item){
+    var _key = key, type = typeof key;
+    if(type === 'string') {
+      _key = key.split('.');
+    }else if(type === 'number'){
+      _key = [key];
+    }
+    if(_key.length === 1){
+      if( Array.isArray( key ) && arguments.length === 1 ){
+        this.splice.apply( this, [ 0, this.length ].concat( key ) )
+        return this;
+      }else if( key === this.length ){
       this.push( item );
       return void 0; // for same behavior we return empty array
     }
-    return this.splice(pos, 1, item)[0];
+      return this.splice( key, 1, item )[ 0 ];
+    }else{
+      return this.item(_key[0]).set(_key.slice(1), item);
+    }
   },
   iterator: function(start){
     return new Iterator(this, start);
+  },
+  removeItem: function(item){
+    var index = this._props.indexOf(item);
+    if(index > -1){
+      this.remove(index);
+    }
+    return item;
   },
   remove: function(pos){
     var item = this._props.splice(pos,1)[0];
@@ -672,60 +759,27 @@ ArrayStore.prototype = {
   },
   forEach: function (fn) {
     return this._props.forEach(fn);
+  },
+  map: function (fn) {
+    return this._props.map(fn);
+  },
+  filter: function(fn) {
+    return this._props.filter(fn);
+  },
+  items: function() {
+    //return this.item()
+  },
+  sub: function(fn, suppressFirstCall) {
+    var changed = () => {
+      fn.call(this, this._props);
+    }
+    this.on('add', changed);
+    this.on('remove', changed);
+    !suppressFirstCall && changed();
   }
 };
 ArrayStore.prototype = Object.assign(new Store(), ArrayStore.prototype);
-/*
-const ArrayStore = function (cfg) {
-  Store.call(this, cfg);
-};
-ArrayStore.prototype = {
-  push: function (val) {
-    var changeList = [];
-    changeList.push(['', this._props])
 
-    this.set(this.getLength(), val, changeList);
-    this._notify(changeList);
-    return this;
-  },
-  pop: function () {
-    var changeList = [];
-    changeList.push(['', this._props]);
-    var out = this.get(this.getLength()-1);
-    this.set(this.getLength()-1, void 0, changeList);
-    this._props.pop();
-    this._notify(changeList);
-    return out;
-  },
-  remove: function(item) {
-    var idx = this._props.indexOf(item);
-    if(idx>-1){
-      var changeList = [];
-      changeList.push(['', this._props]);
-      this._props.splice(idx,1);
-      //this.set(this.getLength()-1, void 0, changeList);
-      this._notify(changeList);
-    }
-    return this;
-  },
-  slice: function () {},
-  splice: function () {},
-  getLength: function () {
-    return this._props.length;
-  },
-  update: function() {
-    var changeList = [];
-    changeList.push(['', this._props]);
-    this._notify(changeList);
-    return this;
-  },
-  '~destructor': function() {
-    this._listeners = this.events = this._props = null;
-  }
-};
-
-ArrayStore.prototype = Object.assign(new Store(), ArrayStore.prototype);*/
-
-
+Store.ArrayStore = ArrayStore;
 typeof module === 'object' && (module.exports = Store);
 (typeof window === 'object') && (window.Store = Store);

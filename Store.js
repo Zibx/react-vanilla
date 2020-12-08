@@ -448,7 +448,7 @@ Store.prototype = {
   },
   sync: function(key, version, saveInterface) {
     saveInterface = saveInterface || Store.SaveInterface.LocalStorage;
-    var iface = new saveInterface(key, version, this);
+    var iface = new saveInterface(key, this);
 
     this._props._VERSION_ = version;
     iface.load(function(err, data) {

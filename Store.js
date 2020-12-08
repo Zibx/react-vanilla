@@ -487,11 +487,11 @@ Store.SaveInterface.LocalStorage = function(key, store) {
 };
 Store.SaveInterface.LocalStorage.prototype = {
   load: function(cb) {
-    var data = {};
+    var data;
     try{
       data = JSON.parse( localStorage.getItem( this.key ) );
     }catch(e){}
-    cb && cb(false, data);
+    cb && cb(false, data || {});
     return data;
   },
   // Should support full save if arguments.length === 0

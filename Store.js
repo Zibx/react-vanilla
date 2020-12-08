@@ -51,7 +51,7 @@ const recursiveWalk = function(path, pointer, key, list) {
     }
   },
   recursiveSet = function(path, pointer, key, val, list){
-    let subKey,i, originalLength;
+    let subKey,i, originalLength, originalValue;
     if( isObject(val) ){
       if(Array.isArray(val)){
 
@@ -85,9 +85,10 @@ const recursiveWalk = function(path, pointer, key, list) {
         }
       }
     }else{
-      if( val !== pointer[ key ] ){
+      originalValue = pointer[ key ];
+      if( val !== originalValue ){
         pointer[ key ] = val;
-        list.push( [ path.concat(key).join( '.' ), pointer[ key ] ] );
+        list.push( [ path.concat(key).join( '.' ), pointer[ key ], originalValue ] );
       }
 
     }

@@ -445,8 +445,61 @@ Store.prototype = {
   },
   valFalse: function(key) {
     return this.valEqual(key, false);
+  },
+  sync: function(key, version, saveInterface) {
+    saveInterface = saveInterface || Store.SaveInterface.LocalStorage;
+    var iface = new saveInterface(key, version, this);
+
+    this._props._VERSION_ = version;
+    iface.load(function(err, data) {
+      if(err)
+        return;
+
+      if(data._VERSION_ >= version){
+        if( !( '_VERSION_' in data ) || data._VERSION_ === version ){
+          for( var k in data ){
+            this.set( k, data[ k ] );
+          }
+        }
+      }else{
+        iface.save();
+      }
+    });
+
+    var shouldSave,
+      saveFn = function() {
+        iface.save();
+        clearTimeout(shouldSave)
+        shouldSave = false;
+      };
+    this.events.on('change', function() {
+      if(!shouldSave)
+        shouldSave = setTimeout(saveFn, 500);
+    });
+    this.save = saveFn;
   }
 };
+Store.SaveInterface = {};
+// interface for save and load data
+Store.SaveInterface.LocalStorage = function(key, store) {
+  this.key = key;
+  this.store = store;
+};
+Store.SaveInterface.LocalStorage.prototype = {
+  load: function(cb) {
+    var data = {};
+    try{
+      data = JSON.parse( localStorage.getItem( this.key ) );
+    }catch(e){}
+    cb && cb(false, data);
+    return data;
+  },
+  // Should support full save if arguments.length === 0
+  save: function(key, val) {
+    localStorage.setItem(this.key, JSON.stringify(this.store._props));
+  }
+};
+
 const StoreBinding = function(store, key){
   this.store = store;
   this.key = key;

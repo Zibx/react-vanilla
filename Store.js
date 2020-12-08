@@ -448,7 +448,7 @@ Store.prototype = {
   },
   sync: function(key, version, saveInterface) {
     saveInterface = saveInterface || Store.SaveInterface.LocalStorage;
-    var iface = new saveInterface(key, this);
+    var iface = new saveInterface(key, this), _self = this;
 
     this._props._VERSION_ = version;
     iface.load(function(err, data) {
@@ -458,7 +458,7 @@ Store.prototype = {
       if(data._VERSION_ >= version){
         if( !( '_VERSION_' in data ) || data._VERSION_ === version ){
           for( var k in data ){
-            this.set( k, data[ k ] );
+            _self.set( k, data[ k ] );
           }
         }
       }else{

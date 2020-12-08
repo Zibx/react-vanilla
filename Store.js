@@ -88,7 +88,7 @@ const recursiveWalk = function(path, pointer, key, list) {
       originalValue = pointer[ key ];
       if( val !== originalValue ){
         pointer[ key ] = val;
-        list.push( [ path.concat(key).join( '.' ), pointer[ key ], originalValue ] );
+        list.push( [ path.concat(key).join( '.' ), pointer[ key ] ] );
       }
 
     }

@@ -186,6 +186,17 @@ NS.apply = function(a,b) {
         tr: null,
         Text: function( val ){ return document.createTextNode( val );}
     };
+    D = NS.D = NS.apply(function( selector, ext ) {
+        var out = ArraySlice.call(document.querySelectorAll(selector));
+        if(arguments.length > 1){
+            for( var i = 0, _i = out.length; i < _i; i++ ){
+                var element = out[ i ];
+                D.ext(element, ext);
+            }
+        }
+        return out;
+    }, D);
+
     'div,template,span,input,label,canvas,span,textarea,table,tr,td,th,tBody,tHead'.split( ',' ).forEach( function( name ){
         D[ name ] = function(){
             return domEl.apply( null, [ name ].concat(ArraySlice.call(arguments)));

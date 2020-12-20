@@ -59,24 +59,6 @@ NS.apply = function(a,b) {
         on: true, renderto: true, el: true
     };
 
-    var anyTypeClsSetter = function(el, cls) {
-        if(typeof cls === 'function'){
-            cls(setters.cls(el));
-        }else if(typeof cls === 'object' && cls.hook){
-            cls.hook(setters.cls(el));
-        }else if(typeof cls === 'object'){
-
-            var resolvedCls = Array.isArray(cls)?D.cls.apply(D, cls):D.cls(cls);
-            if(typeof resolvedCls === 'function'){
-                resolvedCls(setters.cls(el));
-            }else{
-                setters.cls(el)(resolvedCls);
-            }
-        }else{
-            setters.cls(el)(cls);
-        }
-    };
-
 // ~jsx h function
     var domEl = function( type, cfg ){
         var typeOfType = typeof type;
@@ -119,7 +101,21 @@ NS.apply = function(a,b) {
             }
 
         if( cls ){
-            anyTypeClsSetter(el, cls);
+            if(typeof cls === 'function'){
+                cls(setters.cls(el));
+            }else if(typeof cls === 'object' && cls.hook){
+                cls.hook(setters.cls(el));
+            }else if(typeof cls === 'object'){
+
+                var resolvedCls = Array.isArray(cls)?D.cls.apply(D, cls):D.cls(cls);
+                if(typeof resolvedCls === 'function'){
+                    resolvedCls(setters.cls(el));
+                }else{
+                    setters.cls(el)(resolvedCls);
+                }
+            }else{
+                setters.cls(el)(cls);
+            }
         }
 
         if( style ){
@@ -235,7 +231,7 @@ NS.apply = function(a,b) {
       setClassNameSVG = function(el, cls) {
           el.setAttribute( 'class', cls );
       };
-    'svg,path,circle,g,defs,marker,ellipse,animateTransform,linearGradient,mask,rect,stop'.split( ',' ).forEach( function( name ){
+    'svg,path,circle,g,defs,marker,ellipse,animateTransform,mask,rect'.split( ',' ).forEach( function( name ){
         customElementCreate[name] = createElementSVG;
         customElementClassNameSetter[name] = setClassNameSVG;
         D[ name ] = function(cfg){
@@ -256,8 +252,14 @@ NS.apply = function(a,b) {
 
     D.ext = function(el, cfg) {
         cfg.el = el;
-        if(cfg.cls){
-            anyTypeClsSetter(el, [el.className, cfg.cls])
+        if(el.className && cfg.cls){
+            if( typeof cfg.cls === 'string' ){
+                cfg.cls += ' '+el.className;
+            }else if(Array.isArray(cfg.cls)){
+                cfg.cls.push(el.className);
+            }else{
+                debugger
+            }
         }
         return D.div(cfg);
     }
@@ -394,12 +396,7 @@ NS.apply = function(a,b) {
 
                         if(!tmp || !tmp.parentNode)
                             return;
-
-                        var isInDOM = D.isInDOM(el);
-                        isInDOM && D._recursiveCmpCall(el, fragment, 'beforeAddToDOM');
                         el.insertBefore(fragment, tmp);
-                        isInDOM && D._recursiveCmpCall(el, {childNodes: list}, 'afterAddToDOM');
-
                     };
                     release = subEl( hookFn );
                     isNotFragment && el.__un.push(release);
@@ -540,8 +537,6 @@ NS.apply = function(a,b) {
         return construct;
     };
     D.declare = function(name, ctor) {
-        name = name.replace(/[\/\\]/g,'__');
-
         var uses;
         if(typeof ctor === 'object'){
             var original = ctor;
@@ -564,10 +559,8 @@ NS.apply = function(a,b) {
                 var u = uses[ i ], d = u.dom;
                 u.dom = _construct(ctor, u.cfg, u.p);
                 d.dom && (d = d.dom);
-                !Array.isArray(d) && (d = [d]);
-                if(d.length && d[0].parentNode){
-
-                    var dParent = d[0].parentNode,
+                if(d.parentNode){
+                    var dParent = d.parentNode,
                       isInDOM = D.isInDOM(dParent),
                       newChild = u.dom;
 
@@ -576,28 +569,11 @@ NS.apply = function(a,b) {
                         newChild.__cmp = u.dom;
                     }
 
-                    for(var j = 0, _j = d.length - 1; j < _j; j++){
-                        isInDOM && D._recursiveCmpCall(dParent, d[j], 'beforeRemoveFromDOM');
-                        dParent.removeChild( d[j] )
-                    }
-
-                    var lastEl = d[j];
-                    isInDOM && D._recursiveCmpCall(dParent, lastEl, 'beforeRemoveFromDOM');
-                    var fragment = document.createDocumentFragment();
-
-                    for(var j = 0, _j = newChild.length; j < _j; j++){
-                        isInDOM && D._recursiveCmpCall(dParent, newChild[j], 'beforeAddToDOM');
-                        fragment.appendChild(newChild[j])
-                    }
-                    dParent.replaceChild( fragment, lastEl )
-                    if(isInDOM){
-                        for( var j = 0, _j = d.length; j < _j; j++ ){
-                            D._recursiveCmpCall( dParent, d[ j ], 'afterRemoveFromDOM' );
-                        }
-                        for( var j = 0, _j = newChild.length; j < _j; j++ ){
-                            D._recursiveCmpCall( dParent, newChild[ j ], 'afterAddToDOM' );
-                        }
-                    }
+                    isInDOM && D._recursiveCmpCall(dParent, d, 'beforeRemoveFromDOM');
+                    isInDOM && D._recursiveCmpCall(dParent, newChild, 'beforeAddToDOM');
+                    d.parentNode.replaceChild( newChild, d )
+                    isInDOM && D._recursiveCmpCall(dParent, d, 'afterRemoveFromDOM');
+                    isInDOM && D._recursiveCmpCall(dParent, newChild, 'afterAddToDOM');
                 }
             }
         }else{

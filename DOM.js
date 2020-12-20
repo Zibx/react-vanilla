@@ -235,7 +235,7 @@ NS.apply = function(a,b) {
       setClassNameSVG = function(el, cls) {
           el.setAttribute( 'class', cls );
       };
-    'svg,path,circle,g,defs,marker,ellipse,animateTransform,linearGradient,mask,rect'.split( ',' ).forEach( function( name ){
+    'svg,path,circle,g,defs,marker,ellipse,animateTransform,linearGradient,mask,rect,stop'.split( ',' ).forEach( function( name ){
         customElementCreate[name] = createElementSVG;
         customElementClassNameSetter[name] = setClassNameSVG;
         D[ name ] = function(cfg){

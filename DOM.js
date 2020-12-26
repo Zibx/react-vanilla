@@ -257,7 +257,7 @@ NS.apply = function(a,b) {
     D.ext = function(el, cfg) {
         cfg.el = el;
         if(cfg.cls){
-            anyTypeClsSetter(el, [el.className, cfg.cls])
+            cfg.cls = [el.className, cfg.cls];
         }
         return D.div(cfg);
     }
@@ -479,7 +479,7 @@ NS.apply = function(a,b) {
                 }else if(Array.isArray(token)){
                     tmp = D._cls(token, refs, depth+1);
                     // TODO check for push tmp
-                    tmp && out.push( token );
+                    tmp && out.push( tmp );
                 }else{
                     for(key in token){
                         if(token[key] === null)

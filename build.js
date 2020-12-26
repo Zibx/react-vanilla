@@ -15,7 +15,13 @@ const {minify} = require("terser"),
       rDOM
     },
 
-    hash = {};
+    hash = {},
+
+    {execSync} = require('child_process'),
+    commit = execSync( 'git rev-list --count HEAD' ).toString().trim()-0,
+
+    bigVersion = 1,
+    version = [bigVersion, commit/17|0, commit % 17];
 
 Object
   .values(build)
@@ -26,18 +32,31 @@ Object
   );
 
 (async function(){
-
-
   for( let outFileName in build ){
     let
-      dest = path.join( dir, outFileName )+'.js',
-      source = header +
+      dest = path.join( dir, outFileName )+'_'+version.join('.')+'.js',
+      latest = path.join( dir, outFileName )+'_latest.js',
+      source =
         (await minify(
-          build[ outFileName ].map( fileName => hash[ fileName ] ).join( ';' )
-        )).code;
-    fs.writeFileSync( dest, source );
-    console.log( `Build ${dest} ${( source.length / 1024 ).toFixed( 2 )}K` )
+          build[ outFileName ].map( fileName => hash[ fileName ] ).join( ';' ),
+          {
+            sourceMap: true,
+            format: {
+              preamble: header
+            },
+            ie8: false,
+            compress: {
+              passes: 2
+            }
+          }
+        )),
+      code = source.code,
+      map = source.map;
+
+    fs.writeFileSync( dest, code );
+    fs.writeFileSync( dest+'.map', map );
+    fs.writeFileSync( latest, code );
+    fs.writeFileSync( latest+'.map', map );
+    console.log( `Build ${dest} ${( code.length / 1024 ).toFixed( 2 )}K` )
   }
-
-
 })();

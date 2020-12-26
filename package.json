@@ -14,6 +14,11 @@
   "author": "",
   "license": "MPL-2.0",
   "dependencies": {
+    "simplest-dom": "^0.0.20",
     "terser": "^5.4.0"
+  },
+  "devDependencies": {
+    "mocha": "^8.2.1",
+    "chai": "^4.2.0"
   }
 }

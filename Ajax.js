@@ -115,52 +115,25 @@
 			}
 		}
 	};
-	const AsyncAjax = Ajax.async = {
-		get( url, cfg ){
+	const AsyncAjax = Ajax.async = {};
+
+	['get', 'post', 'put', 'delete'].forEach(function(name) {
+		AsyncAjax[name] = function( url, cfg ){
 			return new Promise( function( resolve, reject ){
-				Ajax.get( url, function( err, data ){
+				Ajax[name]( url, function( err, data ){
 					if( err ){
 						reject( data );
 					}else{
-						resolve( data );
+						if(data.error){
+							reject( data.data );
+						}else{
+							resolve( data.data );
+						}
 					}
 				}, cfg )
 			} );
-		},
-		post( url, data, cfg ){
-			return new Promise( function( resolve, reject ){
-				Ajax.post( url, data, function( err, data ){
-					if( err ){
-						reject( data );
-					}else{
-						resolve( data );
-					}
-				}, cfg )
-			} );
-		},
-		put( url, data, cfg ){
-			return new Promise( function( resolve, reject ){
-				Ajax.put( url, data, function( err, data ){
-					if( err ){
-						reject( data );
-					}else{
-						resolve( data );
-					}
-				}, cfg )
-			} );
-		},
-		[ 'delete' ]( url, data, cfg ){
-			return new Promise( function( resolve, reject ){
-				Ajax[ 'delete' ]( url, data, function( err, data ){
-					if( err ){
-						reject( data );
-					}else{
-						resolve( data );
-					}
-				}, cfg )
-			} );
-		}
-	};
+		};
+	});
 
 	(typeof module === 'object') && (module.exports = Ajax);
 	(typeof window === 'object') && (window.Ajax = Ajax);

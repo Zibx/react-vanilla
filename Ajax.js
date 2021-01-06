@@ -118,9 +118,9 @@
 	const AsyncAjax = Ajax.async = {};
 
 	['get', 'post', 'put', 'delete'].forEach(function(name) {
-		AsyncAjax[name] = function( url, cfg ){
+		AsyncAjax[name] = function( url, data, cfg ){
 			return new Promise( function( resolve, reject ){
-				Ajax[name]( url, function( err, data ){
+				var handle = function( err, data ){
 					if( err ){
 						reject( data );
 					}else{
@@ -130,7 +130,12 @@
 							resolve( data.data );
 						}
 					}
-				}, cfg )
+				};
+
+				if(name === 'get')
+					Ajax[name]( url, handle, cfg );
+				else
+					Ajax[name]( url, data, handle, cfg );
 			} );
 		};
 	});

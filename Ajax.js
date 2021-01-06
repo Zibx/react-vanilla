@@ -126,8 +126,10 @@
 					}else{
 						if(data.error){
 							reject( data.data );
-						}else{
+						}else if(data.error === false){
 							resolve( data.data );
+						}else{
+							resolve( data );
 						}
 					}
 				};

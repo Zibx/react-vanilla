@@ -46,6 +46,9 @@ var Transform = (function() {
     concat: hookAndConvert(function(val, val2) {
       return val + val2;
     }),
+    concatLeft: hookAndConvert(function(val, val2) {
+      return val2 + val;
+    }),
     toLowerCase: hookAndConvert(function(val) {
       return (val+'').toLowerCase();
     })

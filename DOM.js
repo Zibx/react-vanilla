@@ -253,7 +253,14 @@ NS.apply = function(a,b) {
         return el;
     };
     D.h = domEl;
-
+    D.getRect = function(el) {
+        var out = {left: el.offsetLeft, top: el.offsetTop, width: el.clientWidth, height: el.clientHeight}, pointer;
+        while((el = el.offsetParent)){
+            out.left += el.offsetLeft;
+            out.top += el.offsetTop;
+        }
+        return out;
+    };
     D.ext = function(el, cfg) {
         cfg.el = el;
         if(cfg.cls){

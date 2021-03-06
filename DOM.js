@@ -770,7 +770,7 @@ NS.apply = function(a,b) {
                 return el;
             },
             createElementNS: function( namespaceURI, qualifiedName ){
-                var el = doc.createElement(namespaceURI, qualifiedName);
+                var el = doc.createElementNS(namespaceURI, qualifiedName);
                 el.___id = cid++;
                 return el;
             }
@@ -782,14 +782,13 @@ NS.apply = function(a,b) {
     var sequence = function(el, out){
         out = out || [];
         if( el.nodeType === 3){ // textNode
-            out.push(el.cid)//el.cid
+            out.push(el.___id)//el.cid
         }else{
-            out.push(el.cid)
             var children = el.childNodes;
             for(var i = 0, _i = children.length; i < _i; i++){
-                rec(children[i], out);
+                sequence(children[i], out);
             }
-
+            out.push(el.___id)
         }
         return out;
     }

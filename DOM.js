@@ -253,14 +253,7 @@ NS.apply = function(a,b) {
         return el;
     };
     D.h = domEl;
-    D.getRect = function(el) {
-        var out = {left: el.offsetLeft, top: el.offsetTop, width: el.clientWidth, height: el.clientHeight}, pointer;
-        while((el = el.offsetParent)){
-            out.left += el.offsetLeft;
-            out.top += el.offsetTop;
-        }
-        return out;
-    };
+
     D.ext = function(el, cfg) {
         cfg.el = el;
         if(cfg.cls){
@@ -274,6 +267,7 @@ NS.apply = function(a,b) {
     D.isInDOM = function(el) {
         return document.body.contains(el);
     };
+
     D._recursiveCmpCall = function(el, sub, fnName){
         if(sub.__cmp)
             sub.__cmp[fnName] && sub.__cmp[fnName](el);
@@ -526,6 +520,8 @@ NS.apply = function(a,b) {
         }
     };
 
+//#declaration
+
     var usage = {};
     var populate = function(name, construct) {
         var tokens = name.split('.'),
@@ -638,6 +634,11 @@ NS.apply = function(a,b) {
             later = setTimeout(realLog, 3000);
 
     };
+
+
+//#end declaration
+
+//#subscribe
     var emptyFn = function() {};
 
     D.Unsubscribe = function(fn) {
@@ -678,24 +679,9 @@ NS.apply = function(a,b) {
         move: unsubscribable('mousemove'),
         over: unsubscribable('mouseover'),
     };
+//#end subscribe
 
-    D.AnimationFrame = function(fn) {
-        var requested = false,
-          arg,
-
-          update = function() {
-              fn.call(null, arg);
-              requested = false;
-          };
-
-        return function(a) {
-            arg = a;
-            if(!requested){
-                requestAnimationFrame(update);
-                requested = true;
-            }
-        };
-    };
+//#overlay
     D.overlay = {
         inited: false,
         show: function() {
@@ -719,6 +705,8 @@ NS.apply = function(a,b) {
             }, true)
         }
     };
+//#end overlay
+//#util
     D.findParent = function(el, fn) {
         var test;
         while(el){
@@ -729,8 +717,86 @@ NS.apply = function(a,b) {
             el = el.parentNode
         }
     };
+
+    D.getRect = function(el) {
+        var out = {left: el.offsetLeft, top: el.offsetTop, width: el.clientWidth, height: el.clientHeight}, pointer;
+        while((el = el.offsetParent)){
+            out.left += el.offsetLeft;
+            out.top += el.offsetTop;
+        }
+        return out;
+    };
+
+    D.AnimationFrame = function(fn) {
+        var requested = false,
+          arg,
+
+          update = function() {
+              fn.call(null, arg);
+              requested = false;
+          };
+
+        return function(a) {
+            arg = a;
+            if(!requested){
+                requestAnimationFrame(update);
+                requested = true;
+            }
+        };
+    };
+//#end util
     D.s = D.h;
 
+    // #build
+    var doc = document;
+    D.shimDocument = function(cid) {
+        cid = cid || 0;
+        document = {
+            body: doc.body,
+            querySelectorAll: function(selector) {
+                return doc.querySelectorAll(selector);
+            },
+            createDocumentFragment: function() {
+                return doc.createDocumentFragment();
+            },
+            createElement: function(tagName, options) {
+                var el = doc.createElement(tagName, options);
+                el.___id = cid++;
+                return el;
+            },
+            createTextNode: function(data) {
+                var el = doc.createTextNode(data);
+                el.___id = cid++;
+                return el;
+            },
+            createElementNS: function( namespaceURI, qualifiedName ){
+                var el = doc.createElement(namespaceURI, qualifiedName);
+                el.___id = cid++;
+                return el;
+            }
+        };
+    };
+    D.unshimDocument = function() {
+        document = doc;
+    };
+    var sequence = function(el, out){
+        out = out || [];
+        if( el.nodeType === 3){ // textNode
+            out.push(el.cid)//el.cid
+        }else{
+            out.push(el.cid)
+            var children = el.childNodes;
+            for(var i = 0, _i = children.length; i < _i; i++){
+                rec(children[i], out);
+            }
+
+        }
+        return out;
+    }
+    D.collectOrder = function(el) {
+        return sequence(el || doc.body)
+    }
+    // #end build
 })(window['NS'], typeof window !== "undefined" ? window :
   typeof WorkerGlobalScope !== "undefined" ? self :
     typeof global !== "undefined" ? global :

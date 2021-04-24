@@ -409,7 +409,7 @@ Store.prototype = {
     return this;
   },
   bind: function (key) {
-    return new StoreBinding( this, key );
+    return Array.isArray(this._props[key]) ? this.array(key): new StoreBinding( this, key );
   },
   val: function(key) {
     const me = this;
@@ -638,7 +638,7 @@ HookPrototype.prototype = {
     val = this.setter(val);
     var oldVal = this.get();
     if(!this.equal(oldVal, val)){
-      this.data = val;
+      this._props = val;
       this._emit(oldVal, val);
     }
   },
@@ -646,7 +646,7 @@ HookPrototype.prototype = {
     return newVal === oldVal;
   },
   get: function() {
-    return this.data;
+    return this._props;
   },
   binding: function() {
     var x = new StoreBinding();
@@ -673,11 +673,11 @@ HookPrototype.prototype = {
     }
   }
 };
-var HookFactory = function(accessor) {
+var HookFactory = function(accessor, baseObjectCtor) {
   var Hook = function(cfg) {
     if(!(this instanceof Hook))
       return new Hook(cfg);
-    this.data = {};
+    this._props = baseObjectCtor ? baseObjectCtor(this, cfg) : {};
     this.subscribers = [];
     this.set(cfg);
   };
@@ -694,24 +694,7 @@ Store.getValue = function(val) {
   }
 };
 
-Store.Value = {
-  Boolean: new HookFactory({
-    setter: function(val) { return !!val; },
-    toggle: function() { this.set(!this.get()); }
-  }),
-  Number: new HookFactory({
-    setter: function(val) { return val-0; }
-  }),
-  String: new HookFactory({
-    setter: function(val) { return val+''; }
-  }),
-  Integer: new HookFactory({
-    setter: function(val) { return val|0; }
-  }),
-  Any: new HookFactory(),
-  Array: new HookFactory(),
-  Function: new HookFactory()
-};
+
 Store.HookPrototype = HookPrototype;
 
 /*
@@ -727,15 +710,19 @@ var fns = Array.prototype;
 
 const ArrayStore = function(cfg) {
   Store.call(this, cfg);
-  if( !('get' in this._props) ){
-    Object.defineProperties( this._props, {
-      get: { value: getter, enumerable: false }
-    } );
-  }
+  this._exposeGet();
   this.length = this._props.length;
 };
 
 ArrayStore.prototype = {
+  _exposeGet: function() {
+    if( !('get' in this._props) ){
+      Object.defineProperties( this._props, {
+        get: { value: getter, enumerable: false }
+      } );
+    }
+    return this._props;
+  },
   length: 0,
   indexOf: function (a) {
     if(typeof a === 'function'){
@@ -814,7 +801,8 @@ ArrayStore.prototype = {
     }else if(type === 'number'){
       _key = [key];
     }
-    if(_key.length === 1){
+
+    //if(_key.length === 1){
       if( Array.isArray( key ) && arguments.length === 1 ){
         this.splice.apply( this, [ 0, this.length ].concat( key ) )
         return this;
@@ -823,9 +811,9 @@ ArrayStore.prototype = {
         return void 0; // for same behavior we return empty array
       }
       return this.splice( key, 1, item )[ 0 ];
-    }else{
+    /*}else{
       return this.item(_key[0]).set(_key.slice(1), item);
-    }
+    }*/
   },
   iterator: function(start){
     return new Iterator(this, start);
@@ -871,6 +859,33 @@ ArrayStore.prototype = {
 };
 ArrayStore.prototype = Object.assign(new Store(), ArrayStore.prototype);
 Store.ArrayStore = ArrayStore;
+
+// Object.assign does not work with nested prototypes
+ArrayStore.linearPrototype = {};
+for(var i in ArrayStore.prototype){
+  ArrayStore.linearPrototype[ i ] = ArrayStore.prototype[ i ];
+}
+
+Store.Value = {
+  Boolean: new HookFactory({
+    setter: function(val) { return !!val; },
+    toggle: function() { this.set(!this.get()); }
+  }),
+  Number: new HookFactory({
+    setter: function(val) { return val-0; }
+  }),
+  String: new HookFactory({
+    setter: function(val) { return val+''; }
+  }),
+  Integer: new HookFactory({
+    setter: function(val) { return val|0; }
+  }),
+  Any: new HookFactory(),
+  Array: new HookFactory(ArrayStore.linearPrototype, function(obj){return obj._exposeGet.call({_props: []}); }),
+  Function: new HookFactory()
+};
+
+
 
 typeof module === 'object' && (module.exports = Store);
 (typeof window === 'object') && (window.Store = Store);

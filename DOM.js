@@ -271,8 +271,14 @@ NS.apply = function(a,b) {
     D._recursiveCmpCall = function(el, sub, fnName){
         if(sub.__cmp)
             sub.__cmp[fnName] && sub.__cmp[fnName](el);
-        for( var i = 0, _i = sub.childNodes.length; i < _i; i++ ){
-            var childNode = sub.childNodes[ i ];
+
+        var children = Array.isArray(sub) ? sub : sub.childNodes;
+
+        for( var i = 0, _i = children.length; i < _i; i++ ){
+            var childNode = children[ i ];
+            if('dom' in childNode){
+                childNode = childNode.dom;
+            }
             D._recursiveCmpCall(sub, childNode, fnName);
         }
     };

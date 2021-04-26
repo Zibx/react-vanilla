@@ -18,6 +18,16 @@ describe('DOM with Store', function(){
     assert.equal(div.outerHTML, '<div data-hooked="yep">d</div>');
   } );
 
+  it( 'should create simple a href with reactive values', function(){
+    var href = new Store.Value.String('href');
+    var val = new Store.Value.String('txt');
+    var div = D.h('a', {href: href}, val);
+    assert.equal(div.outerHTML, '<a href="href" data-hooked="yep">txt</a>');
+    href.set('href2');
+    val.set('txt2');
+    assert.equal(div.outerHTML, '<a href="href2" data-hooked="yep">txt2</a>');
+  } );
+
   it( 'should set reactive cls', function(){
     var val = new Store.Value.String('c'),
         bool = new Store.Value.Boolean(false);

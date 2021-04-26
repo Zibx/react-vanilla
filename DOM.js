@@ -132,7 +132,7 @@ NS.apply = function(a,b) {
                         if( typeof style[ i ] === 'function' ){
                             style[ i ]( setters.style( s, i ) );
                         }else if(typeof style[ i ] === 'object'&& style[ i ] !== null && style[ i ].hook){
-                            return style[ i ].hook(setters.style(s, i));
+                            style[ i ].hook(setters.style(s, i));
                         }else{
                             setters.style( s, i )( style[ i ] );
                         }
@@ -147,7 +147,7 @@ NS.apply = function(a,b) {
                 if( typeof attr[ i ] === 'function' ){
                     attr[ i ]( setters.attr( el, i ) );
                 }else if(typeof attr[ i ] === 'object'&& attr[ i ] !== null && attr[ i ].hook){
-                    return attr[ i ].hook(setters.attr(el, i));
+                    attr[ i ].hook(setters.attr(el, i));
                 }else{
                     setters.attr( el, i )( attr[ i ] );
                 }

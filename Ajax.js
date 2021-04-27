@@ -22,16 +22,18 @@
 				cb && cb( false, { error: false } );
 				return;
 			}else if( xhr.readyState === 4 && xhr.status >= 200 && xhr.status < 300 ){
-				let json;
+				let json, error = false;
 				if( cfg.bonus && cfg.bonus.raw )
 					return cb && cb( false, xhr );
 				try{
 					json = JSON.parse( xhr.responseText );
-					cb && cb( false, json );
 				}catch( e ){
+					error = true;
+					json = e;
 					console.error( 'AJAX:' + method + ' Incorrect Response ← ' + cfg.url, xhr.responseText, e );
-					cb && cb( true, e );
 				}
+
+				cb && cb( error, json );
 			}else if( xhr.status === 404 ){
 				cb && cb( true );
 			}else if( xhr.status === 503 ){

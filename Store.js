@@ -881,7 +881,7 @@ Store.Value = {
     setter: function(val) { return val|0; }
   }),
   Any: new HookFactory(),
-  Array: new HookFactory(ArrayStore.linearPrototype, function(obj){return obj._exposeGet.call({_props: []}); }),
+  Array: new HookFactory(ArrayStore.linearPrototype, function(obj){obj._listeners = {}; return obj._exposeGet.call({_props: []}); }),
   Function: new HookFactory()
 };
 

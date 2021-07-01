@@ -77,7 +77,7 @@
 			method = method || 'POST';
 			let stringData = '';
 			try{
-				stringData = JSON.stringify( data );
+				stringData = data instanceof FormData ? data : JSON.stringify( data );
 				cfg = transformCfg( cfg || {} );
 				cfg.url = url;
 

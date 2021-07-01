@@ -24,7 +24,6 @@ var Observable = (function(){
             }
         },
         fire: function( k ){
-            //console.log(k)
             var listeners = this._listeners[ k ],
               listener;
             if( listeners === void 0 )

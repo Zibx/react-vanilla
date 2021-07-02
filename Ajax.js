@@ -1,13 +1,19 @@
 ;(function(){
+	const clearEmpty = function(obj) {
+		for(var k in obj){
+			if(obj[k] === void 0 || obj[k] === null)
+				delete obj[k];
+		}
+		return obj[k];
+	};
 	const transformCfg = function( cfg ){
 		return Object.assign( {}, cfg, {
-			headers: Object.assign(
+			headers: clearEmpty(Object.assign(
 				{
 					'Content-Type': 'application/json',
 					'Accept': 'application/json'
 				},
-				cfg && cfg.headers || {}
-			)
+				cfg && cfg.headers || {} ))
 		} );
 	};
 	let refreshing = false, refreshed = false;
@@ -77,7 +83,16 @@
 			method = method || 'POST';
 			let stringData = '';
 			try{
-				stringData = data instanceof FormData ? data : JSON.stringify( data );
+
+				if(data instanceof FormData){
+					cfg = cfg || {};
+					cfg.headers || (cfg.headers = {});
+					cfg.headers['Content-Type'] = void 0;
+					stringData = data;
+				}else{
+					stringData = JSON.stringify( data );
+				}
+
 				cfg = transformCfg( cfg || {} );
 				cfg.url = url;
 

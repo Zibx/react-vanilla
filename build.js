@@ -59,4 +59,9 @@ Object
     fs.writeFileSync( latest+'.map', map );
     console.log( `Build ${dest} ${( code.length / 1024 ).toFixed( 2 )}K` )
   }
+  fs.writeFileSync( 'index.html', fs.readFileSync('list.html', 'utf-8')
+    .replace('$LIST$', `
+      ${fs.readdirSync(dir).filter(a=>a[0]!=='.').map(a=>`<li><a href="build/${a}">${a}</a></li>`).join('\n')}
+    `)
+  );
 })();

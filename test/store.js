@@ -357,3 +357,16 @@ describe('array events', function() {
         assert.equal(changeFiredInner, 1);
     });
 });
+
+describe('Bug with subscribing to multiple bindings', function() {
+    it('should call fn with both values setted', function(){
+        const s = new Store( { a: '1', b: '2' } ),
+          bind1 = s.bind( 'a' ),
+          bind2 = s.bind( 'b' );
+
+        s.sub( [ bind1, bind2 ], function( a, b ){
+            assert.equal( a, '1' );
+            assert.equal( b, '2' );
+        } );
+    });
+});

@@ -360,23 +360,30 @@ Store.prototype = {
         };
       };
 
-      var uns = [];
+      var uns = [], keyI;
 
       for( var i = 0, _i = key.length; i < _i; i++ ){
-        if(key[i] instanceof StoreBinding){
-          // TODO add suppressFirstCall
-          uns.push(key[i].sub(wrap(i)));
-          args[i] = key[i].get();
-        }else if(key[i] instanceof HookPrototype){
-          uns.push(key[i].hook(wrap(i), suppressFirstCall));
-          args[i] = key[i].get();
+        keyI = key[i];
+        if(keyI instanceof StoreBinding){
+          args[i] = keyI.get();
+        }else if(keyI instanceof HookPrototype){
+          args[i] = keyI.get();
         }else{
-          uns.push(this.on( key[ i ], wrap(i) ));
-          args[i] = this.get(key[ i ]);
+          args[i] = this.get(keyI);
         }
-
-
       }
+      for( i = 0; i < _i; i++ ){
+        keyI = key[i];
+        if(keyI instanceof StoreBinding){
+          // TODO add suppressFirstCall
+          uns.push(keyI.sub(wrap(i)));
+        }else if(keyI instanceof HookPrototype){
+          uns.push(keyI.hook(wrap(i), suppressFirstCall));
+        }else{
+          uns.push(this.on( keyI, wrap(i) ));
+        }
+      }
+
       !suppressFirstCall && caller();
       return function() {
         for( var i = 0, _i = uns.length; i < _i; i++ ){

@@ -327,6 +327,9 @@ NS.apply = function(a,b) {
         isInDOM && D._recursiveCmpCall(el, {childNodes: newChild}, 'afterAddToDOM');
 
     };
+
+    var _Promise = Promise;
+
     D.appendChild = function(el, subEl){
         var type = typeof subEl;
 
@@ -335,6 +338,15 @@ NS.apply = function(a,b) {
         }
         var notObject = type !== 'object';
         var isHook = !notObject && ('hook' in subEl);
+
+        if(subEl instanceof _Promise){
+            var origin = subEl;
+            subEl = function(update) {
+                origin.then(function(a,b) {
+                    update(a);
+                });
+            }
+        }
 
         if(isHook){
             type = 'function'; notObject = true;
@@ -535,6 +547,7 @@ NS.apply = function(a,b) {
           first = tokens.shift();
 
         // ES 6 consts are not in global scope. So we can not just add vars to window
+        first = first.replace(/-/g,'');
         var pointer = first?
           new Function('glob', 'return typeof '+first+' !== "undefined"?'+first+':(glob["'+first+'"] = {})')(glob)
           :glob;

@@ -678,6 +678,19 @@ HookPrototype.prototype = {
     for( var i = 0, _i = subscribers.length; i < _i; i++ ){
       subscribers[ i ](val);
     }
+  },
+  valEqual: function(compareTo) {
+    var me = this;
+    return function backwardCallback(update) {
+      var cache;
+      me.hook(function(val) {
+        var result = me.equal(val, compareTo);
+        if(result !== cache){
+          cache = result;
+          update(cache);
+        }
+      });
+    }
   }
 };
 var HookFactory = function(accessor, baseObjectCtor) {

@@ -370,3 +370,65 @@ describe('Bug with subscribing to multiple bindings', function() {
         } );
     });
 });
+describe('Feature. Binding.valEqual', function() {
+    it('Should trigger fn when value is changed', function() {
+        var str = new Store.Value.String('123');
+        var changes = [];
+
+        str.valEqual('16')(changes.push.bind(changes));
+        //false +init
+
+        str.set('17');
+        //false
+
+        str.set('123')
+        //false
+
+        str.set('17');
+        //false
+
+        str.set('16');
+        //true +change
+
+        str.set('88')
+        //false +change
+
+        str.set('16');
+        //true +change
+
+        str.set('16');
+        //true
+
+        assert.deepEqual(changes, [false, true, false, true]);
+
+        var str = new Store.Value.String('123');
+        var changes = [];
+
+        str.valEqual('123')(changes.push.bind(changes));
+        //true +init
+
+        str.set('17');
+        //false +change
+
+        str.set('123')
+        //true +change
+
+        str.set('17');
+        //false +change
+
+        str.set('16');
+        //false
+
+        str.set('88')
+        //false
+
+        str.set('16');
+        //false
+
+        str.set('16');
+        //false
+
+        assert.deepEqual(changes, [true, false, true, false]);
+
+    })
+});

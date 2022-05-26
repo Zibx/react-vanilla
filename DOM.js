@@ -83,7 +83,12 @@ NS.apply = function(a,b) {
 
         if(typeOfType === 'function'){
             // factory passed
-            return type(cfg, ArraySlice.call(arguments, 2));
+            if(type.constructor !== void 0) {
+                // instantiate
+                return new type( cfg, ArraySlice.call( arguments, 2 ) );
+            }else {
+                return type( cfg, ArraySlice.call( arguments, 2 ) );
+            }
         }else if(type !== null && typeof type === 'object' && type.hook){
             // hooked future element creation
             return type.hook(cfg, ArraySlice.call(arguments, 2));

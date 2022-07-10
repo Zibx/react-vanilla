@@ -142,11 +142,11 @@
 						reject( data );
 					}else{
 						if(data.error){
-							reject( data.data );
+							reject( data.data, data );
 						}else if(data.error === false){
-							resolve( data.data );
+							resolve( data.data, data );
 						}else{
-							resolve( data );
+							resolve( data, data );
 						}
 					}
 				};

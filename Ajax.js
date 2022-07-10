@@ -138,15 +138,16 @@
 		AsyncAjax[name] = function( url, data, cfg ){
 			return new Promise( function( resolve, reject ){
 				var handle = function( err, data ){
+					Ajax.lastResponse = data;
 					if( err ){
 						reject( data );
 					}else{
 						if(data.error){
-							reject( data.data, data );
+							reject( data.data );
 						}else if(data.error === false){
-							resolve( data.data, data );
+							resolve( data.data );
 						}else{
-							resolve( data, data );
+							resolve( data );
 						}
 					}
 				};

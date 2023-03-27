@@ -358,6 +358,99 @@ describe('array events', function() {
     });
 });
 
+describe('Array store should be indexable', function() {
+    it('indexes should make it faster', function(){
+        var testCount = 1200;
+        var accessSequence = [];
+        for(var i = 0; i < testCount; i++)
+            accessSequence.push(Math.random()*testCount|0);
+
+        var bench = function(s, count){
+            var tStart = +new Date();
+            for(var i = 0; i < count; i++){
+                s.push({ID: i+'-id', num: i, reverseID: count-i-1+'-rev'});
+            }
+            var tFilled = +new Date();
+            for(var i = 0, _i = accessSequence.length; i < _i; i++){
+                var id = accessSequence[i];
+                assert.equal(s.find({ID: id+'-id'})[0].num, id);
+            }
+            for(var i = 0, _i = accessSequence.length; i < _i; i++){
+                var id = accessSequence[i];
+                assert.equal(s.find({reverseID: id+'-rev'})[0].num, count-id-1);
+            }
+            var tEnd = +new Date();
+
+            return {fill: tFilled-tStart, search: tEnd-tFilled, total: tEnd - tStart}
+        };
+        var getMetrics = function(dataPrepareFn) {
+            var result = [];
+            for(var i = 0; i <10; i++){
+                result.push(dataPrepareFn(bench));
+            }
+            var sorted = result.sort((a,b)=>a.total-b.total);
+            sorted.pop();
+            sorted.shift();
+            var reduced = sorted.reduce(function(store, obj){
+                for(var key in obj){
+                    store[key] = (store[key]||0)+obj[key];
+                }
+                return store;
+            },{});
+            for(var key in reduced){
+                reduced[key] /= sorted.length;
+            }
+            return reduced;
+        };
+
+        var original = getMetrics(function(bench){
+            var s = new Store({arr: [], indexedArr: []});
+            var notIndexed = s.array('arr');
+            return bench(notIndexed, testCount)
+        });
+/*
+        var indexedID = getMetrics(function(bench){
+            var s = new Store({arr: [], indexedArr: []});
+            var indexed = s.array('arr').index({'ID': true});
+            return bench(indexed, testCount)
+        });*/
+
+        var indexed = getMetrics(function(bench){
+            var s = new Store({arr: [], indexedArr: []});
+            var indexed = s.array('arr').index({'ID': true, 'reverseID': true});
+            return bench(indexed, testCount)
+        });
+
+        assert.equal(original.fill/1.1 < indexed.fill, true)
+        assert.equal(original.search / Math.log2(testCount)/2> indexed.search, true)
+        console.log(original);
+        console.log(indexed);
+    });
+    it('should work with multiple indexes', function(){
+        var s = new Store({arr: []}),
+            arr = s.array('arr');
+
+        for(var i = 'a'; i <= 'm'; i = String.fromCharCode(i.charCodeAt(0)+1)) {
+            arr.index({[i]: true});
+        }
+        var start = +new Date();
+        for(var i = 1; i < 100000; i++){
+            arr.push({a: i, b: i%2, c:i%3, d: i%5, e: i%7, f: i%11, g: i%13, h: i%17, i: i%19, j: i%23})
+        }
+        for(var i = 1; i < 100; i++){
+            arr.pop()
+        }
+        var matchStart = +new Date();
+        for(var i = 1; i < 1000; i++) {
+            assert( Math.abs( 100000 / ( 19 * 23 ) - ( arr.find( { i: 0, j: 0 } ).length ) ) < 3 );
+        }
+
+        var end = +new Date();
+        console.log(matchStart-start, end-matchStart);
+    });
+
+});
+
 describe('Bug with subscribing to multiple bindings', function() {
     it('should call fn with both values setted', function(){
         const s = new Store( { a: '1', b: '2' } ),
@@ -430,5 +523,6 @@ describe('Feature. Binding.valEqual', function() {
 
         assert.deepEqual(changes, [true, false, true, false]);
 
-    })
+    });
 });
+

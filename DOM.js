@@ -833,3 +833,6 @@ var D = NS.D,
       page: {},
       cmp: {}
   };
+
+if(typeof module !== 'undefined')
+    module.exports = D;

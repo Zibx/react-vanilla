@@ -5,7 +5,7 @@ License:
 MPL-2.0
 
 Developed in:
-2012-2020
+2012-2023
 
 
 Mozilla Public License, version 2.0 

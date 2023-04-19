@@ -4,7 +4,7 @@
 			if(obj[k] === void 0 || obj[k] === null)
 				delete obj[k];
 		}
-		return obj[k];
+		return obj;
 	};
 	const transformCfg = function( cfg ){
 		return Object.assign( {}, cfg, {

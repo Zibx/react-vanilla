@@ -1,6 +1,6 @@
 {
   "name": "react-vanilla",
-  "version": "1.1.22",
+  "version": "1.1.23",
   "description": "",
   "main": "DOM.js",
   "scripts": {
@@ -14,13 +14,13 @@
   "author": "Zibx",
   "license": "MPL-2.0",
   "dependencies": {
-    "simplest-dom": "^0.0.20",
-    "terser": "^5.4.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "mocha": "^8.2.1",
     "nyc": "^15.1.0",
-    "express": "*"
+    "express": "*",
+    "terser": "^5.4.0",
+    "simplest-dom": "^0.0.20"
   }
 }

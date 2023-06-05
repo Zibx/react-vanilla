@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@gitlab.quokka.pub:Zibx/react-vanilla.git"
+    "url": "git@github.com:Zibx/react-vanilla.git"
   },
   "keywords": ["react-vanilla", "DOM", "reactive", "FRP", "reactive storage", "h function"],
   "author": "Zibx",

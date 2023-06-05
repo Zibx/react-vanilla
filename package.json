@@ -1,6 +1,6 @@
 {
   "name": "react-vanilla",
-  "version": "1.1.21",
+  "version": "1.1.22",
   "description": "",
   "main": "DOM.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git@gitlab.quokka.pub:Zibx/react-vanilla.git"
   },
-  "keywords": [],
+  "keywords": ["react-vanilla", "DOM", "reactive", "FRP", "reactive storage", "h function"],
   "author": "Zibx",
   "license": "MPL-2.0",
   "dependencies": {
@@ -20,6 +20,7 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "mocha": "^8.2.1",
-    "nyc": "^15.1.0"
+    "nyc": "^15.1.0",
+    "express": "*"
   }
 }

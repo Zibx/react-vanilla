@@ -94,6 +94,16 @@ NS.apply = function(a,b) {
             return type.hook(cfg, ArraySlice.call(arguments, 2));
         }
 
+        /* Quality Of life feature
+         when using `h` function manually — sometimes forget to specify cfg and pass a string that suppose to be a child,
+         but it explodes into attributes of an element like <div 1="c" 2="a" 3="t"/> instead of <div>cat</div>
+         */
+        var typeOfCfg = typeof cfg; var firstChildArgument = 2;
+
+        if(typeOfCfg !== 'undefined' && (typeOfCfg !== 'object' && !Array.isArray(cfg))){
+          firstChildArgument = 1;
+          cfg = {};
+        }
 
         cfg = cfg || {};
         var cls = cfg.cls || cfg['class'] || cfg.className,
@@ -167,7 +177,7 @@ NS.apply = function(a,b) {
             on.hasOwnProperty( i ) && el.addEventListener( i, on[ i ] );
         }
 
-        for( i = 2, _i = arguments.length; i < _i; i++ ){
+        for( i = firstChildArgument, _i = arguments.length; i < _i; i++ ){
             var child = arguments[ i ];
             D.appendChild( el, child );
         }

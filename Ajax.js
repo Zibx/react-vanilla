@@ -32,6 +32,7 @@
           _cb(err, data);
         }
       };
+      done();
     };
     if(!window.xxx)
       cb = _cb;

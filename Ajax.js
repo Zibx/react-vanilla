@@ -17,7 +17,23 @@
 		} );
 	};
 	let refreshing = false, refreshed = false;
-	const xhrProceed = function( method, xhr, cfg, cb ){
+	const xhrProceed = function( method, xhr, cfg, _cb ){
+    var cb = function(err, data){
+      var pointer = 0;
+      var done = function(){
+        if(arguments.length === 2){
+          err = arguments[0];
+          data = arguments[1];
+        }
+        var fn = Ajax._responseHandlerQueue[pointer++]
+        if(fn){
+          fn(err, data, done);
+        }else{
+          _cb(err, data);
+        }
+      };
+    };
+
 		xhr.open( method, cfg.url, true );
 		for( let key in cfg.headers ){
 			xhr.setRequestHeader( key, cfg.headers[ key ] );
@@ -43,12 +59,7 @@
 			}else if( xhr.status === 404 ){
 				cb && cb( true );
 			}else if( xhr.status === 503 ){
-				// Server is busy
-				/*
-				{
-						"message": "Идет обновление..."
-				}
-				 */
+        // updating
 			}else if( xhr.status === 401 ){
 				//debugger
 				//Пользователь не авторизован
@@ -65,7 +76,7 @@
 				}
 				return;
 			}else if( xhr.status === 403 ){
-				//Нет доступа к ассистенту
+				// no access
 				window.location.href = "/";
 				return;
 			}else if( xhr.status >= 400 ){
@@ -159,7 +170,22 @@
 			} );
 		};
 	});
+  Ajax._proceedResponse = function(err, data){
 
+  };
+  Ajax._responseHandlerQueue = [];
+  Ajax.registerResponseHandler = function(fn){
+    Ajax._responseHandlerQueue.push(fn);
+    var un = function(){
+      var index = Ajax._responseHandlerQueue.indexOf(fn);
+      index > -1 && Ajax._responseHandlerQueue.splice(index, 1);
+    };
+
+    if(typeof D === 'function' && typeof D.Unsubscribe === 'function')
+      return D.Unsubscribe(un);
+
+    return {un: un};
+  };
 	(typeof module === 'object') && (module.exports = Ajax);
 	(typeof window === 'object') && (window.Ajax = Ajax);
 })();

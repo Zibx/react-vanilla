@@ -34,8 +34,6 @@
       };
       done();
     };
-    if(!window.xxx)
-      cb = _cb;
 
 		xhr.open( method, cfg.url, true );
 		for( let key in cfg.headers ){

@@ -519,7 +519,7 @@ StoreBinding.prototype = {
       return this.un = this.store.sub(this.key, fn);
     }else{
       return this.un = this.store.sub(
-        (Array.isArray(k)?k:[k]).map(k=>this.key+'.'+k), fn);
+        (Array.isArray(k)?k:[k]).map(k=> k instanceof StoreBinding ? k : this.key+'.'+k), fn);
     }
 
   },
@@ -623,13 +623,29 @@ Store.IF = function(cfg, children){
 Store.NOT = Store.AGGREGATE(function(values, length) {
   return !values[0];
 });
-Store.debounce = function(fn, dt) {
-  var timeout = false, args, scope,
+
+/** @function Store.debounce
+ * @param {function} fn - function that would be called
+ * @param {number} dt - delay before call
+ * @param {boolean} [strictDelay = false] - delay would be
+ * @description prevent multiple function calls
+ * @returns {function}
+ * */
+Store.debounce = function(fn, dt, strictDelay) {
+  var timeout = false, args, scope, lastCall,
     realCall = function() {
+      if(strictDelay){
+        var now = +new Date();
+        if(lastCall>=now-dt ){
+          return timeout = setTimeout(realCall, lastCall+dt-now+1);
+        }
+
+      }
       timeout = false;
       fn.apply(scope, args)
     };
   return function(){
+    lastCall = +new Date();
     args = [].slice.call(arguments);
     scope = this;
     if(!timeout){

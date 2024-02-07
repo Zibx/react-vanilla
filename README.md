@@ -10,6 +10,9 @@ There is a <a href="https://www.npmjs.com/package/cms-tapir">cms-tapir package</
 
 Library is capable of using reactive values.
 
+Properties and children can be defined as functions. If function is presented — it would be called with a callback parameter. When callback parameter is called with some value — parameter would be updated with this value.
+
+Async functions are also supported.
 
 # Store
 

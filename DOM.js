@@ -61,7 +61,10 @@ NS.apply = function(a,b) {
 
     var anyTypeClsSetter = function(el, cls) {
         if(typeof cls === 'function'){
-            cls(setters.cls(el));
+            var setter = setters.cls(el);
+            var result = cls(setter);
+            if(result instanceof _Promise)
+              result.then(setter);
         }else if(typeof cls === 'object' && cls.hook){
             cls.hook(setters.cls(el));
         }else if(typeof cls === 'object'){
@@ -436,6 +439,10 @@ NS.apply = function(a,b) {
 
                     };
                     release = subEl( hookFn );
+                    if(release instanceof _Promise){
+                      // TODO CHECK IF LEAKING
+                      release.then(hookFn);
+                    }
                     isNotFragment && el.__un.push(release);
                 }
             }else if( subEl !== void 0 && subEl !== false && subEl !== null ){
@@ -531,6 +538,8 @@ NS.apply = function(a,b) {
                 }
             }else if(typeof token === 'function'){
                 args[i] = DataPieceFactory(refs, args[i]);
+            }else if(typeof token === 'number'){
+              out.push( token +'');
             }
         }
         return depth === 0 && refs.length ? D.__cls(args, refs): out.join(' ');

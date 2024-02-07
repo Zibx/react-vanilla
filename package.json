@@ -1,6 +1,6 @@
 {
   "name": "react-vanilla",
-  "version": "1.1.24",
+  "version": "1.1.26",
   "description": "",
   "main": "DOM.js",
   "scripts": {
@@ -21,6 +21,6 @@
     "nyc": "^15.1.0",
     "express": "*",
     "terser": "^5.4.0",
-    "simplest-dom": "^0.0.20"
+    "simplest-dom": "^0.0.23"
   }
 }

@@ -37,6 +37,43 @@ describe('store', function(){
         assert.equal( s.get( 'a.b.d' ), void 0 );
     } );
 
+    it( 'should pipe', function(){
+      const s = new Store( {} );
+      s.set( 'a', 5 );
+
+      var callID = 0;
+      var val = s.pipe( 'a')
+        .pipe(a=>Math.abs(a))
+        .pipe(a=>a*2)
+        .pipe(a=>a+2)
+        .pipe(a=>a+' cats ')
+        .pipe(a=>a.trim());
+
+      var result;
+      var un = val(_=>result = _ +':'+(callID++));
+
+      assert.equal( result, '12 cats:0' );
+
+      s.set('a', 6)
+      assert.equal( result, '14 cats:1' );
+
+      // No redundant calls if value does not change
+      s.set('a', -6)
+      assert.equal( result, '14 cats:1' );
+
+      // No redundant calls if value does not change
+      s.set('a', -5)
+      assert.equal( result, '12 cats:2' );
+
+      // garbage can be collected
+      un();
+      s.set('a', 10)
+      assert.equal( result, '12 cats:2' );
+
+      un = val(_=>result = _ +'|'+(callID++));
+      assert.equal( result, '22 cats|3' );
+    } );
+
     it( 'should fire changes for simple values', function(){
         const s = new Store( { a: 4, b: 5, c: 6 } );
         let list;

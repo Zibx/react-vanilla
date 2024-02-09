@@ -120,7 +120,17 @@ Store.prototype = {
     this.parent = new StoreParent(parent, key, item);
   },
   bindings: function() {
-    var out = {};
+    var _self = this;
+    var out = {
+      _addOther: function(obj){
+        for(var key in obj)
+          if(_self.get(key) === void 0){
+            _self.set( key, obj[key] );
+            this[key] = _self.bind(key);
+          }
+          return this;
+      }
+    };
     for(var k in this._props){
       out[k] = this.bind(k);
     }
@@ -418,6 +428,59 @@ Store.prototype = {
   bind: function (key) {
     return Array.isArray(this._props[key]) ? this.array(key): new StoreBinding( this, key );
   },
+  pipe: function(key){
+    var processors = [];
+    var subscribes = [];
+    var me = this;
+    var val, lastVal;
+    var un;
+
+    var dispatch = function(){
+      for( var i = 0; i < subscribes.length; i++ ) {
+        var subscribe = subscribes[ i ];
+        subscribe.apply(me, lastVal);
+      }
+    };
+    var process = function(){
+      var val;
+      for( var i = 0; i < processors.length; i++ ) {
+        var processor = processors[ i ];
+        if(i>0){
+          val = processor.fn.call( me, val );
+        }else {
+          val = processor.fn.apply( me, arguments );
+        }
+        if(processor.val === val)
+          return;
+
+        processor.val = val;
+      }
+      lastVal = [val];
+      dispatch();
+    };
+    var backwardCallback = function(update){
+      if(subscribes.length === 0){
+        un = me.sub(key, process);
+      }
+      subscribes.push(update);
+      update.apply(me, lastVal);
+      return function(){
+        for( var i = subscribes.length; i--; ) {
+          if(subscribes[ i ] === update){
+            subscribes.splice(i, 1);
+          }
+        }
+        if(subscribes.length === 0){
+          un();
+        }
+      };
+    };
+    backwardCallback.pipe = function(fn){
+      processors.push({process: true, fn, val: void 0});
+      return backwardCallback;
+    }
+    return backwardCallback;
+  },
   val: function(key) {
     const me = this;
     return function backwardCallback(update) {
@@ -614,6 +677,9 @@ Store.IF = function(cfg, children){
       cfg.condition.hook( hook );
     }else if(typeof cfg.condition === 'function'){
       cfg.condition( hook );
+    }else if(typeof cfg.condition !== 'object'){
+      console.warn('Condition is not reactive');
+      update(!!cfg.condition);
     }else{
       // TODO other hooklikes
       hook(cfg.condition)

@@ -710,14 +710,21 @@ Store.debounce = function(fn, dt, strictDelay) {
       timeout = false;
       fn.apply(scope, args)
     };
-  return function(){
+  var out = function(){
     lastCall = +new Date();
     args = [].slice.call(arguments);
     scope = this;
     if(!timeout){
       timeout = setTimeout(realCall, dt);
     }
+  };
+  out.now = function(anyway){
+    if(timeout || anyway) {
+      clearTimeout( timeout )
+      realCall();
+    }
   }
+  return out;
 };
 var HookPrototype = function() {};
 HookPrototype.prototype = {

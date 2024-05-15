@@ -1097,7 +1097,15 @@ Store.Value = {
   }),
   Any: new HookFactory(),
   Array: new HookFactory(ArrayStore.linearPrototype, function(obj){obj._listeners = {}; return obj._exposeGet.call({_props: []}); }),
-  Function: new HookFactory()
+  Function: new HookFactory(),
+  init: function(type, value){
+    if(value){
+      if(value instanceof Store.Value[type]) {
+        return value
+      }
+    }
+    return new Store.Value[type](value);
+  }
 };
 
 

@@ -740,7 +740,10 @@ NS.apply = function(a,b) {
               continue;
 
             if( name.substr( 0, 2 ) === 'on' ) {
-              obj.on( name.substr( 2, 1 ).toLowerCase()+name.substr( 3 ), cfg[ i ]);
+              if(!obj.__un) {
+                obj.__un = new D.Unsubscribe()
+              }
+              obj.__un.add(obj.on( name.substr( 2, 1 ).toLowerCase()+name.substr( 3 ), cfg[ i ]));
             } else {
               obj[ i ] = cfg[ i ];
             }

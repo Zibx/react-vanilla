@@ -724,6 +724,32 @@ NS.apply = function(a,b) {
     };
 //#end subscribe
 
+//#assign
+    D._protected = {on: 1, un: 1, fire: 1};
+    D.assign = function( obj ){
+      var i, _i, j, _j, name,
+        other = Array.prototype.slice.call(arguments, 1),
+        protected = obj._protected || D._protected;
+
+      for(j = 0, _j = other.length; j < _j; j++) {
+        var cfg = other[j]
+        for( i in cfg )
+          if( cfg.hasOwnProperty( i ) ) {
+            name = i.toLowerCase();
+            if( name in protected )
+              continue;
+
+            if( name.substr( 0, 2 ) === 'on' ) {
+              obj.on( name.substr( 2, 1 ).toLowerCase()+name.substr( 3 ), cfg[ i ]);
+            } else {
+              obj[ i ] = cfg[ i ];
+            }
+          }
+      }
+      return obj;
+    }
+//#end assign
+
 //#overlay
     D.overlay = {
         inited: false,

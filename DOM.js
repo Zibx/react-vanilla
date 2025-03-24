@@ -223,6 +223,11 @@ NS.apply = function(a,b) {
         Text: function( val ){ return document.createTextNode( val );}
     };
     D = NS.D = NS.apply(function( selector, ext ) {
+        if(typeof selector === 'function'){
+          // document onload shorthand
+          document.addEventListener(ext?'DOMContentLoaded':'load', selector);
+          return;
+        }
         var out = [];
         selector = Array.isArray(selector) ? selector : [selector];
         for( var i = 0, _i = selector.length; i < _i; i++ ){

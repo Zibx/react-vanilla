@@ -3,7 +3,7 @@ const {minify} = require("terser"),
     path = require( 'path'),
 
     DOM = ['DOM.js'],
-    rDOM = DOM.concat('Observer.js', 'Store.js', 'Transform.js', 'Ajax.js'),
+    rDOM = DOM.concat('Observer.js', 'Store.js', 'Transform.js', 'Ajax.js', 'Cmp.js'),
     dir = 'build',
     header = `/* Vanilla.js Reactivity by Ivan Kubota. 
 * ©Form.dev 2012—${(new Date()).getFullYear()}

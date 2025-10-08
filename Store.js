@@ -726,7 +726,21 @@ Store.debounce = function(fn, dt, strictDelay) {
   }
   return out;
 };
+
+
+/**
+ * @typedef {object} ReactiveValue
+ * @template T
+ * @property {function(val: T): T} setter - Function to modify or process a value before it is set.
+ * @property {function(val: T): void} set - Sets a new value and emits updates to subscribers.
+ * @property {function(oldVal: T, newVal: T): boolean} equal - Compares two values for equality.
+ * @property {function(): T} get - Retrieves the current value.
+ * @property {function(): StoreBinding} binding - Creates a binding to manage the value externally.
+ * @property {function(fn: function, suppressFirstCall?: boolean): function} hook - Subscribes a function to changes, optionally suppressing the first call.
+ * @property {function(compareTo: T): function} valEqual - Creates a callback that tracks equality to a given value.
+ */
 var HookPrototype = function() {};
+/** @type {ReactiveValue} */
 HookPrototype.prototype = {
   setter: function(val) { return val; },
   //getter: function(val) { return val; },
@@ -782,6 +796,9 @@ HookPrototype.prototype = {
     }
   }
 };
+
+
+
 var HookFactory = function(accessor, baseObjectCtor) {
   var Hook = function(cfg) {
     if(!(this instanceof Hook))

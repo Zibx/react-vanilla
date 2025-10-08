@@ -1125,7 +1125,8 @@ Store.Value = {
   }
 };
 
-
+var _Store = new Store();
+Store.sub = _Store.sub.bind(_Store);
 
 typeof module === 'object' && (module.exports = Store);
 (typeof window === 'object') && (window.Store = Store);

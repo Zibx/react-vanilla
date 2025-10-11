@@ -574,8 +574,11 @@ Store.SaveInterface.LocalStorage.prototype = {
     var data;
     try{
       data = JSON.parse( localStorage.getItem( this.key ) );
-    }catch(e){}
-    cb && cb(false, data || {});
+      cb && cb(false, data || {});
+    }catch(e){
+      cb && cb(true, {});
+    }
+
     return data;
   },
   // Should support full save if arguments.length === 0
@@ -584,7 +587,34 @@ Store.SaveInterface.LocalStorage.prototype = {
   }
 };
 
-const StoreBinding = function(store, key){
+let _saveID = 1;
+Store.Persistent = function(data, key, storeInterface){
+    storeInterface = storeInterface || Store.SaveInterface.LocalStorage;
+    key = key || 'persistent_'+_saveID++;
+  var fakeStore = {_props: {}};
+  var ifaceInstance = new storeInterface(key, fakeStore);
+  ifaceInstance.load(function(err, loadedData){
+    var shouldSave = false;
+    if(err){
+      if(typeof data !== 'object'){
+        throw new Error('Persistent data is not an object');
+      }
+      shouldSave = true;
+    }else{
+      for(var k in loadedData){
+        data[k].set(loadedData[k]);
+      }
+    }
+    Store.sub(data, function(data){
+      for(var k in data){
+        fakeStore._props[k] = data[k];
+      }
+      ifaceInstance.save();
+    }, !shouldSave);
+  });
+}
+
+var StoreBinding = function(store, key){
   this.store = store;
   this.key = key;
 };

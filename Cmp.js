@@ -151,6 +151,36 @@
         D.h('span', {cls: "cmp-color--title"}, cfg.label)
         : null)
     );
-
   });
+
+  D.Field.TextArea = D.declare('Field.TextArea', (cfg)=> {
+    let changeHandler = cfg.onchange || cfg.onclick;
+
+    var input = D.h('textarea', {cls:"text--input", type:"text", "aria-label":"Change value"});
+    if(cfg.bind){
+      cfg.bind.hook(val => {
+        input.value = val || '';
+        changeHandler && changeHandler(val || '');
+      });
+    };
+
+
+    var change = Store.debounce(function(e){
+      var val = input.value;
+      cfg.bind.set(val)
+    },5);
+
+    'input,change,click,mouseup'.split(',')
+      .map(a=>a.trim())
+      .forEach(evt => input.addEventListener(evt, change));
+
+    return D.h('label', {cls: clsBuilder("cmp-textarea", cfg), title: cfg.alt ||  "Change text", renderTo: cfg.renderTo},
+      (cfg.label ?
+        D.h('span', {cls: "cmp-text--title"}, cfg.label)
+        : null),
+      input
+
+    );
+  });
+
 })();

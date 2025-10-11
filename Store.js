@@ -400,6 +400,19 @@ Store.prototype = {
           uns[ i ]();
         }
       };
+    }else if(typeof key === 'object') {
+      var list = [];
+      var data = {}, k, i, _i;
+      for(k in key){
+        list.push(key[k]);
+      }
+      return this.sub(list, function(){
+        i = 0;
+        for(k in key){
+          data[k] = arguments[i++];
+        }
+        fn.call(this, data);
+      }, suppressFirstCall);
     }else{
       un = this.on( key, fn );
       !suppressFirstCall && fn( this.get( key ) );

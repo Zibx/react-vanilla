@@ -3,6 +3,7 @@ Observable Store based in 2016 April by Ivan Kubota
 License: MPL 2.0
 Contact: zibx@quokka.pub
  */
+;(function(){
 const isEqual = function(original, fn) {
   return function(val) {
     fn(val===original);
@@ -1173,3 +1174,4 @@ Store.sub = _Store.sub.bind(_Store);
 
 typeof module === 'object' && (module.exports = Store);
 (typeof window === 'object') && (window.Store = Store);
+})();

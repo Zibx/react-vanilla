@@ -55,6 +55,30 @@
     );
   });
 
+  D.Field.Number = D.declare('field.Number', (cfg)=> {
+    let changeHandler = cfg.onchange || cfg.onclick;
+    var input = D.h('input', {cls:"cmp-number__input", type:"number", min: cfg.min, max: cfg.max, step: cfg.step});
+    if(cfg.bind){
+      cfg.bind.hook(val => {
+        input.value = val;
+        changeHandler && changeHandler(val);
+      });
+    };
+    var change = Store.debounce(function(e){
+      cfg.bind.set(parseFloat(input.value))
+    },5);
+    'input, change,click, mouseup,wheel'.split(',')
+      .map(a=>a.trim())
+      .forEach(evt => input.addEventListener(evt, change));
+    return D.h('label', {cls: clsBuilder("cmp-number", cfg), title: cfg.alt || "Change value", renderTo: cfg.renderTo},
+      (cfg.label ?
+        D.h('span', {cls: "cmp-number--title"}, cfg.label)
+        : null),
+      input,
+      (cfg.after ? cfg.after : null)
+    );
+  });
+
 
   D.Field.Slider = D.declare('field.Slider', (cfg)=> {
     let changeHandler = cfg.onchange || cfg.onclick;

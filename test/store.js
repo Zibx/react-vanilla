@@ -563,3 +563,57 @@ describe('Feature. Binding.valEqual', function() {
     });
 });
 
+describe('Feature. ReactiveValue.map', function() {
+    it('should return a backward callback that transforms values', function() {
+        var num = new Store.Value.Number(5);
+        var results = [];
+
+        var mapped = num.map(function(val) { return val * 2; });
+        mapped(function(val) { results.push(val); });
+
+        num.set(10);
+        num.set(3);
+
+        assert.deepEqual(results, [10, 20, 6]);
+    });
+
+    it('should work with boolean values', function() {
+        var flag = new Store.Value.Boolean(false);
+        var results = [];
+
+        var mapped = flag.map(function(val) { return val ? 'block' : 'none'; });
+        mapped(function(val) { results.push(val); });
+
+        flag.set(true);
+        flag.set(false);
+
+        assert.deepEqual(results, ['none', 'block', 'none']);
+    });
+
+    it('should work with string values', function() {
+        var name = new Store.Value.String('hello');
+        var results = [];
+
+        var mapped = name.map(function(val) { return val.toUpperCase(); });
+        mapped(function(val) { results.push(val); });
+
+        name.set('world');
+
+        assert.deepEqual(results, ['HELLO', 'WORLD']);
+    });
+
+    it('should work on StoreBinding', function() {
+        var s = new Store({ count: 0 });
+        var binding = s.bind('count');
+        var results = [];
+
+        var mapped = binding.map(function(val) { return val + ' items'; });
+        mapped(function(val) { results.push(val); });
+
+        s.set('count', 3);
+        s.set('count', 1);
+
+        assert.deepEqual(results, ['0 items', '3 items', '1 items']);
+    });
+});
+

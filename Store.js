@@ -644,6 +644,14 @@ StoreBinding.prototype = {
       draw(val);
     });
   },
+  map: function(transform) {
+    var source = this;
+    return function backwardCallback(update) {
+      source.sub(function(val) {
+        update(transform(val));
+      });
+    };
+  },
   array: function() {
     return this.store.array(this.key);
   }
@@ -838,6 +846,14 @@ HookPrototype.prototype = {
         }
       });
     }
+  },
+  map: function(transform) {
+    var source = this;
+    return function backwardCallback(update) {
+      source.hook(function(val) {
+        update(transform(val));
+      });
+    };
   }
 };
 

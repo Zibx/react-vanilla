@@ -295,6 +295,10 @@ NS.apply = function(a,b) {
         if(sub.__cmp)
             sub.__cmp[fnName] && sub.__cmp[fnName](el);
 
+        if(fnName === 'beforeRemoveFromDOM' && sub.__un && sub.__un.un){
+            sub.__un.un();
+        }
+
         var children = Array.isArray(sub) ? sub : sub.childNodes;
 
         for( var i = 0, _i = children.length; i < _i; i++ ){
@@ -365,10 +369,14 @@ NS.apply = function(a,b) {
         if(subEl instanceof _Promise){
             var origin = subEl;
             subEl = function(update) {
-                origin.then(function(a,b) {
-                    update(a);
+                origin.then(function(v) {
+                    v !== void 0 && update(v);
+                }, function(err) {
+                    console.error('D: promise child rejected', err);
                 });
             }
+            type = 'function';
+            notObject = true;
         }
 
         if(isHook){
@@ -385,7 +393,7 @@ NS.apply = function(a,b) {
                 isNotFragment && el.setAttribute('data-hooked', 'yep');
 
                 // maybe do it through outer weak map?
-                isNotFragment && (el.__un = el.__un || []);
+                isNotFragment && (el.__un = el.__un || new D.Unsubscribe());
                 var hookFn, release;
 
                 if(isHook){
@@ -402,8 +410,13 @@ NS.apply = function(a,b) {
                             if(!el)
                                 return;
 
+                            var isInDOM = D.isInDOM(el);
                             for( var i = 0, _i = list.length; i < _i; i++ ){
-                                list[ i ].parentNode === el && el.removeChild( list[ i ] );
+                                if(list[ i ].parentNode === el){
+                                    isInDOM && D._recursiveCmpCall(el, list[ i ], 'beforeRemoveFromDOM');
+                                    el.removeChild( list[ i ] );
+                                    isInDOM && D._recursiveCmpCall(el, list[ i ], 'afterRemoveFromDOM');
+                                }
                             }
                             var fragment = document.createDocumentFragment();
                             D.appendChild( fragment, ArraySlice.call( arguments ) );
@@ -411,11 +424,13 @@ NS.apply = function(a,b) {
 
                             if( !tmp || !tmp.parentNode )
                                 return;
+                            isInDOM && D._recursiveCmpCall(el, fragment, 'beforeAddToDOM');
                             el.insertBefore( fragment, tmp );
+                            isInDOM && D._recursiveCmpCall(el, {childNodes: list}, 'afterAddToDOM');
                         }
                     };
                     release = subEl.hook( hookFn );
-                    isNotFragment && el.__un.push(release);
+                    isNotFragment && release && el.__un.add(release);
                 }else{
 
                     hookFn = function(){
@@ -427,8 +442,13 @@ NS.apply = function(a,b) {
                         if(!el)
                             return;
 
+                        var isInDOM = D.isInDOM(el);
                         for( var i = 0, _i = list.length; i < _i; i++ ){
-                            list[ i ].parentNode === el && el.removeChild( list[ i ] );
+                            if(list[ i ].parentNode === el){
+                                isInDOM && D._recursiveCmpCall(el, list[ i ], 'beforeRemoveFromDOM');
+                                el.removeChild( list[ i ] );
+                                isInDOM && D._recursiveCmpCall(el, list[ i ], 'afterRemoveFromDOM');
+                            }
                         }
                         var fragment = document.createDocumentFragment();
                         D.appendChild( fragment, ArraySlice.call( arguments ) );
@@ -437,7 +457,6 @@ NS.apply = function(a,b) {
                         if(!tmp || !tmp.parentNode)
                             return;
 
-                        var isInDOM = D.isInDOM(el);
                         isInDOM && D._recursiveCmpCall(el, fragment, 'beforeAddToDOM');
                         el.insertBefore(fragment, tmp);
                         isInDOM && D._recursiveCmpCall(el, {childNodes: list}, 'afterAddToDOM');
@@ -445,10 +464,14 @@ NS.apply = function(a,b) {
                     };
                     release = subEl( hookFn );
                     if(release instanceof _Promise){
-                      // TODO CHECK IF LEAKING
-                      release.then(hookFn);
+                      release.then(function(v) {
+                          v !== void 0 && hookFn(v);
+                      }, function(err) {
+                          console.error('D: async child rejected', err);
+                      });
+                      release = null;
                     }
-                    isNotFragment && el.__un.push(release);
+                    isNotFragment && release && el.__un.add(release);
                 }
             }else if( subEl !== void 0 && subEl !== false && subEl !== null ){
                 el.appendChild( D.Text( subEl ) );

@@ -53,6 +53,50 @@ describe('DOM lib', function(){
 
   } );
 
+  it( 'should work with async setter pattern (_(content) calls)', async function(){
+
+      var div = D.div({},
+          async (_) => { await delay(50); _('hello'); }
+      );
+      await delay(100);
+
+      if(div.outerHTML !== '<div data-hooked="yep">hello</div>')
+        throw new Error(div.outerHTML);
+      else
+        return true;
+  } );
+
+  it( 'should not clear content when async setter resolves to undefined', async function(){
+
+      var div = D.div({},
+          async (_) => {
+              await delay(50);
+              _('first');
+              await delay(50);
+              _('second');
+          }
+      );
+      await delay(150);
+
+      if(div.outerHTML !== '<div data-hooked="yep">second</div>')
+        throw new Error(div.outerHTML);
+      else
+        return true;
+  } );
+
+  it( 'should accept Promise as child directly', async function(){
+
+      var div = D.div({},
+          delay(50).then(function() { return 'resolved'; })
+      );
+      await delay(100);
+
+      if(div.outerHTML !== '<div data-hooked="yep">resolved</div>')
+        throw new Error(div.outerHTML);
+      else
+        return true;
+  } );
+
   it( 'events', function(){
     var clicked = 0
     var div = D.div({onclick: ()=>clicked++});

@@ -538,6 +538,9 @@ NS.apply = function(a,b) {
 
         for(;i<_i;i++){
             token = args[i];
+            if(token === null || token === void 0 || token === '')
+              continue;
+
             if(typeof token === 'string' && token){
                 out.push( token );
             }else if(typeof token === 'object'){

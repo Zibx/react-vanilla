@@ -142,7 +142,7 @@ NS.apply = function(a,b) {
 
         if( style ){
             if(typeof style === 'string'){
-                el.style = style;
+                el.style.cssText = style;
             }else{
                 for( i in style ){
                     var s = el.style;
